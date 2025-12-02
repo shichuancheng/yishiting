@@ -2,7 +2,7 @@
   <footer class="input-area">
     <textarea
       v-model="inputText"
-      placeholder="主公有何烦恼..."
+      :placeholder="placeholder"
       @keydown.enter.exact.prevent="handleSend"
       :disabled="disabled"
       rows="1"
@@ -17,7 +17,8 @@
 import { ref } from 'vue'
 
 const props = defineProps({
-  disabled: { type: Boolean, default: false }
+  disabled: { type: Boolean, default: false },
+  placeholder: { type: String, default: '主公有何烦恼...' }
 })
 
 const emit = defineEmits(['send'])

@@ -1,48 +1,83 @@
 import { ref } from 'vue'
-import { sendMessage as apiSendMessage } from '@/api/chat'
+import { streamChat } from '@/api/chat'
 
-export function useChat() {
+export function useChat(mode = 'emperor') {
   const messages = ref([])
   const loading = ref(false)
+  const currentMode = ref(mode)
+  let currentMessageIndex = -1
 
-  async function sendMessage(text) {
-    if (!text.trim() || loading.value) return false
+  function sendMessage(text) {
+    if (!text.trim() || loading.value) return
 
-    messages.value.push({ role: 'user', content: text })
+    // 添加用户消息
+    messages.value.push({
+      type: 'user',
+      content: text
+    })
+
     loading.value = true
 
-    try {
-      const history = messages.value.slice(0, -1).map(m => ({
-        role: m.role,
-        content: m.content
-      }))
+    // 构建历史上下文（简化格式传给后端）
+    const userTitle = currentMode.value === 'xiyou' ? '施主' : '主公'
+    const history = messages.value.slice(0, -1).map(m => ({
+      role: m.type === 'user' ? 'user' : 'advisor',
+      name: m.role || userTitle,
+      content: m.content
+    }))
 
-      const res = await apiSendMessage(text, history)
-
-      if (res.success) {
-        messages.value.push({ role: 'assistant', content: res.reply })
-        return true
-      } else {
-        messages.value.push({ role: 'assistant', content: '抱歉，出了点问题，请稍后再试。' })
-        return false
+    streamChat(text, history, currentMode.value, {
+      onRoleStart: (data) => {
+        messages.value.push({
+          type: 'advisor',
+          role: data.role,
+          avatar: data.avatar,
+          roleId: data.roleId,
+          content: ''
+        })
+        currentMessageIndex = messages.value.length - 1
+      },
+      
+      onContent: (content) => {
+        if (currentMessageIndex >= 0) {
+          messages.value[currentMessageIndex].content += content
+        }
+      },
+      
+      onRoleEnd: () => {
+        currentMessageIndex = -1
+      },
+      
+      onDone: () => {
+        loading.value = false
+        currentMessageIndex = -1
+      },
+      
+      onError: (error) => {
+        messages.value.push({
+          type: 'system',
+          content: `出错了：${error}`
+        })
+        loading.value = false
+        currentMessageIndex = -1
       }
-    } catch (e) {
-      console.error('Send error:', e)
-      messages.value.push({ role: 'assistant', content: '网络错误，请检查后端服务是否启动。' })
-      return false
-    } finally {
-      loading.value = false
-    }
+    })
   }
 
   function clearMessages() {
     messages.value = []
   }
 
+  function setMode(newMode) {
+    currentMode.value = newMode
+  }
+
   return {
     messages,
     loading,
+    currentMode,
     sendMessage,
-    clearMessages
+    clearMessages,
+    setMode
   }
 }

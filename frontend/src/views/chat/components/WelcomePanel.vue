@@ -1,13 +1,19 @@
 <template>
   <div class="welcome">
-    <div class="welcome-icon">🏯</div>
-    <h2>主公驾到</h2>
-    <p>有何烦心事，尽管道来，谋士团随时听候差遣</p>
+    <div class="welcome-icon">{{ config.icon }}</div>
+    <h2>{{ config.title }}</h2>
+    <p>{{ config.desc }}</p>
+    
+    <div class="characters">
+      <span v-for="char in config.characters" :key="char" class="character-tag">
+        {{ char }}
+      </span>
+    </div>
     
     <div class="examples">
       <p class="examples-title">试试问：</p>
       <button 
-        v-for="example in examples" 
+        v-for="example in config.examples" 
         :key="example.text"
         @click="$emit('select', example.question)"
       >
@@ -18,13 +24,40 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+  mode: { type: String, default: 'emperor' }
+})
+
 defineEmits(['select'])
 
-const examples = [
-  { text: '工作不爽又走不了', question: '我在公司干得不爽，但暂时跳槽无门，怎么办？' },
-  { text: '领导老改需求', question: '领导总是临时改需求，我很烦' },
-  { text: '犹豫要不要跳槽', question: '想跳槽但又怕新公司不稳定' }
-]
+const modeConfigs = {
+  emperor: {
+    icon: '🏯',
+    title: '主公驾到',
+    desc: '有何烦心事，尽管道来，谋士团随时听候差遣',
+    characters: ['🧙‍♂️ 诸葛亮', '⚔️ 孙武', '📜 管仲', '👨‍💼 总管阿宁'],
+    examples: [
+      { text: '工作不爽又走不了', question: '我在公司干得不爽，但暂时跳槽无门，怎么办？' },
+      { text: '领导老改需求', question: '领导总是临时改需求，我很烦' },
+      { text: '犹豫要不要跳槽', question: '想跳槽但又怕新公司不稳定' }
+    ]
+  },
+  xiyou: {
+    icon: '🏔️',
+    title: '施主有礼',
+    desc: '把当下烦恼当成取经路上的一关，师徒四人陪你一起过',
+    characters: ['🧘 唐三藏', '🐵 孙悟空', '🐷 猪八戒', '🏋️ 沙僧'],
+    examples: [
+      { text: '感觉人生好累', question: '最近天天加班，事情又多又杂，感觉日子没盼头' },
+      { text: '总是拖延怎么办', question: '我知道该做什么，但就是提不起劲，老是拖延' },
+      { text: '被困在烂公司', question: '现在公司氛围差，但外面机会也一般，只能硬撑' }
+    ]
+  }
+}
+
+const config = computed(() => modeConfigs[props.mode] || modeConfigs.emperor)
 </script>
 
 <style scoped>
@@ -40,7 +73,23 @@ const examples = [
 
 .welcome-icon { font-size: 64px; margin-bottom: 16px; }
 .welcome h2 { font-size: 24px; margin: 0 0 8px 0; color: #fff; }
-.welcome p { color: rgba(255,255,255,0.6); margin: 0 0 32px 0; }
+.welcome p { color: rgba(255,255,255,0.6); margin: 0 0 20px 0; }
+
+.characters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.character-tag {
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 16px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+}
 
 .examples { text-align: center; }
 .examples-title { 

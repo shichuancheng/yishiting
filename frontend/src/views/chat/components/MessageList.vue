@@ -3,16 +3,41 @@
     <div 
       v-for="(msg, idx) in messages" 
       :key="idx" 
-      :class="['message', msg.role]"
+      :class="['message', msg.type]"
     >
-      <div class="message-content" v-html="formatMessage(msg.content)"></div>
+      <!-- 用户消息 -->
+      <template v-if="msg.type === 'user'">
+        <div class="user-bubble">
+          <div class="content">{{ msg.content }}</div>
+        </div>
+      </template>
+      
+      <!-- 谋士消息 -->
+      <template v-else-if="msg.type === 'advisor'">
+        <div class="advisor-message">
+          <div class="avatar">{{ msg.avatar }}</div>
+          <div class="bubble">
+            <div class="role-name">{{ msg.role }}</div>
+            <div class="content">{{ msg.content }}</div>
+          </div>
+        </div>
+      </template>
+      
+      <!-- 系统消息 -->
+      <template v-else-if="msg.type === 'system'">
+        <div class="system-message">{{ msg.content }}</div>
+      </template>
     </div>
     
-    <div v-if="loading" class="message assistant">
-      <div class="message-content loading">
-        <span class="dot"></span>
-        <span class="dot"></span>
-        <span class="dot"></span>
+    <!-- 加载中 -->
+    <div v-if="loading" class="message advisor">
+      <div class="advisor-message">
+        <div class="avatar">💭</div>
+        <div class="bubble">
+          <div class="loading-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -20,7 +45,6 @@
 
 <script setup>
 import { ref, watch, nextTick } from 'vue'
-import { formatMessage } from '@/utils/format'
 
 const props = defineProps({
   messages: { type: Array, required: true },
@@ -44,60 +68,104 @@ watch(
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.message {
-  max-width: 85%;
-  animation: fadeIn 0.3s ease;
+/* 用户消息 - 右侧 */
+.message.user {
+  align-self: flex-end;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.user-bubble {
+  max-width: 70%;
 }
 
-.message.user { align-self: flex-end; }
-.message.assistant { align-self: flex-start; }
-
-.message-content {
-  padding: 14px 18px;
-  border-radius: 16px;
-  line-height: 1.6;
-  font-size: 15px;
-  color: #fff;
-}
-
-.message.user .message-content {
+.user-bubble .content {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-bottom-right-radius: 4px;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 18px 18px 4px 18px;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.message.assistant .message-content {
+/* 谋士消息 - 左侧 */
+.message.advisor {
+  align-self: flex-start;
+  max-width: 85%;
+}
+
+.advisor-message {
+  display: flex;
+  gap: 10px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
   background: rgba(255,255,255,0.1);
-  border-bottom-left-radius: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
 }
 
-.message-content :deep(.role-tag) {
+.bubble {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px 18px 18px 18px;
+  padding: 12px 16px;
+  min-width: 100px;
+}
+
+.role-name {
+  font-size: 12px;
   color: #ffd700;
   font-weight: 600;
-  margin: 16px 0 8px 0;
-  font-size: 14px;
+  margin-bottom: 6px;
 }
 
-.message-content :deep(.role-tag:first-child) { margin-top: 0; }
-.message-content :deep(.emoji) { margin-right: 4px; }
+.bubble .content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #fff;
+  white-space: pre-wrap;
+}
 
-.loading {
+/* 系统消息 */
+.system-message {
+  align-self: center;
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.05);
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+/* 加载动画 */
+.loading-dots {
   display: flex;
   gap: 4px;
-  padding: 16px 20px !important;
+  padding: 4px 0;
 }
 
-.dot {
+.loading-dots span {
   width: 8px;
   height: 8px;
   background: rgba(255,255,255,0.5);
@@ -105,14 +173,15 @@ watch(
   animation: bounce 1.4s infinite ease-in-out both;
 }
 
-.dot:nth-child(1) { animation-delay: -0.32s; }
-.dot:nth-child(2) { animation-delay: -0.16s; }
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
 
 @keyframes bounce {
   0%, 80%, 100% { transform: scale(0); }
   40% { transform: scale(1); }
 }
 
+/* 滚动条 */
 .messages::-webkit-scrollbar { width: 6px; }
 .messages::-webkit-scrollbar-track { background: transparent; }
 .messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
