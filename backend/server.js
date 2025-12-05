@@ -1,11 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import OpenAI from 'openai';
-import dotenv from 'dotenv';
+import config from './config/index.js';
 import { advisors as emperorAdvisors, directorPrompt as emperorDirector } from './prompts/emperor.js';
 import { advisors as xiyouAdvisors, directorPrompt as xiyouDirector } from './prompts/xiyou.js';
-
-dotenv.config();
 
 // 模式配置
 const modes = {
@@ -19,8 +17,8 @@ app.use(express.json());
 app.use(express.static('.'));
 
 const client = new OpenAI({
-  apiKey: process.env.SILICONFLOW_API_KEY,
-  baseURL: process.env.SILICONFLOW_BASE_URL || 'https://api.siliconflow.cn/v1'
+  apiKey: config.siliconflow.apiKey,
+  baseURL: config.siliconflow.baseURL
 });
 
 // 让"导演"决定下一个发言者
@@ -84,10 +82,12 @@ async function getNextSpeaker(userMessage, chatHistory, availableAdvisors, turnC
 }
 
 
-// 请求日志中间件
+// 请求日志中间件（仅开发环境详细日志）
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  if (config.isDev) {
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  }
   next();
 });
 
@@ -401,12 +401,13 @@ app.get('/api/chat/poll/:sessionId', (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
-
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
-  console.log(`   Local:   http://localhost:${PORT}`);
-  console.log(`   Network: http://10.0.2.2:${PORT} (for emulator)`);
-  console.log('Polling mode enabled');
+app.listen(config.port, config.host, () => {
+  console.log(`\n${'='.repeat(50)}`);
+  console.log(`🚀 服务器启动成功`);
+  console.log(`   环境: ${config.env}`);
+  console.log(`   地址: http://${config.host}:${config.port}`);
+  console.log(`   本地: http://localhost:${config.port}`);
+  console.log(`   模拟器: http://10.0.2.2:${config.port}`);
+  console.log(`   数据库: ${config.dbPath}`);
+  console.log(`${'='.repeat(50)}\n`);
 });
